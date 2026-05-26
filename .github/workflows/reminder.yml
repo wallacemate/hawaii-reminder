@@ -1,0 +1,26 @@
+name: 夏威夷每日提醒
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 每天UTC 00:00 = 台灣早上08:00
+  workflow_dispatch:  # 允許手動執行測試
+
+jobs:
+  send-reminder:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: 設定 Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: 安裝套件
+        run: pip install requests
+        
+      - name: 執行提醒程式
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+        run: python hawaii_reminder.py
