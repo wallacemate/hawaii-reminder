@@ -3,8 +3,9 @@ import schedule
 import time
 from datetime import datetime
 
-BOT_TOKEN = "8911228307:AAEHsL0kTfD6IUfgvY3OUvLbPU3WUqngA3w"
-CHAT_ID = "8978889851"
+import os
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
+CHAT_ID = os.environ.get("CHAT_ID")
 
 def send_telegram(message):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
@@ -44,12 +45,11 @@ def monday_reminder():
 ☐ 回顧上週指標"""
     send_telegram(message)
 
-schedule.every().day.at("08:30").do(morning_reminder)
-schedule.every().monday.at("08:30").do(monday_reminder)
+# 判斷今天是不是週一
+from datetime import datetime
+today = datetime.now().weekday()
 
-print("🚀 提醒機器人已啟動！")
-send_telegram("✅ 夏威夷提醒機器人設定成功！\n每天早上 08:30 會自動提醒你。")
-
-while True:
-    schedule.run_pending()
-    time.sleep(30)
+if today == 0:  # 週一
+    monday_reminder()
+else:
+    morning_reminder()
