@@ -1,9 +1,7 @@
 import requests
-import schedule
-import time
+import os
 from datetime import datetime
 
-import os
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 CHAT_ID = os.environ.get("CHAT_ID")
 
@@ -13,7 +11,7 @@ def send_telegram(message):
     try:
         response = requests.post(url, data=data)
         if response.status_code == 200:
-            print(f"✅ 發送成功：{datetime.now().strftime('%Y-%m-%d %H:%M')}")
+            print("✅ 發送成功")
         else:
             print(f"❌ 發送失敗：{response.text}")
     except Exception as e:
@@ -45,11 +43,8 @@ def monday_reminder():
 ☐ 回顧上週指標"""
     send_telegram(message)
 
-# 判斷今天是不是週一
-from datetime import datetime
 today = datetime.now().weekday()
-
-if today == 0:  # 週一
+if today == 0:
     monday_reminder()
 else:
     morning_reminder()
