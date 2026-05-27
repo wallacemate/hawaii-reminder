@@ -22,7 +22,7 @@ def get_weather():
     try:
         url = "https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-C0032-001"
         params = {
-            "Authorization": "CWA-OPEN-DATA",
+            "Authorization": os.environ.get("CWA_API_KEY"),
             "locationName": "屏東縣",
             "elementName": "Wx,MinT,MaxT,PoP"
         }
