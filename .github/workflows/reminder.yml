@@ -1,10 +1,8 @@
 name: 夏威夷每日提醒
-
 on:
   schedule:
     - cron: '0 0 * * *'  # 每天UTC 00:00 = 台灣早上08:00
   workflow_dispatch:  # 允許手動執行測試
-
 jobs:
   send-reminder:
     runs-on: ubuntu-latest
@@ -25,4 +23,5 @@ jobs:
           CHAT_ID: ${{ secrets.CHAT_ID }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           CWA_API_KEY: ${{ secrets.CWA_API_KEY }}
+          APPS_SCRIPT_URL: ${{ secrets.APPS_SCRIPT_URL }}
         run: python hawaii_reminder.py
