@@ -5,6 +5,7 @@ from datetime import datetime
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 CHAT_ID = os.environ.get("CHAT_ID")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+APPS_SCRIPT_URL = os.environ.get("APPS_SCRIPT_URL")
 
 def send_telegram(message):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
@@ -17,6 +18,19 @@ def send_telegram(message):
             print(f"❌ 發送失敗：{response.text}")
     except Exception as e:
         print(f"❌ 錯誤：{e}")
+
+def get_memo():
+    """從試算表讀取備忘錄內容"""
+    try:
+        url = f"{APPS_SCRIPT_URL}?action=getMemo"
+        res = requests.get(url, timeout=15)
+        data = res.json()
+        if data.get("success") and data.get("memo"):
+            return data["memo"].strip()
+        return ""
+    except Exception as e:
+        print(f"備忘錄讀取失敗：{e}")
+        return ""
 
 def get_weather():
     try:
@@ -92,6 +106,14 @@ def get_monthly_report():
     except Exception as e:
         return f"產業報告暫時無法生成：{e}"
 
+def build_memo_block(memo):
+    """把備忘錄內容格式化成待辦清單區塊"""
+    if not memo:
+        return ""
+    lines = [line.strip() for line in memo.splitlines() if line.strip()]
+    formatted = "\n".join(f"☐ {line}" for line in lines)
+    return f"\n📝 <b>今日待辦（工具箱備忘錄）</b>\n{formatted}\n"
+
 def build_message():
     now = datetime.now()
     today_str = now.strftime("%Y/%m/%d")
@@ -100,6 +122,8 @@ def build_message():
     weather = get_weather()
     pest_alert = get_pest_alert()
     tenders = search_tenders()
+    memo = get_memo()
+    memo_block = build_memo_block(memo)
 
     if is_first_day:
         report = get_monthly_report()
@@ -110,7 +134,7 @@ def build_message():
 
 🐛 <b>本月病蟲害提醒</b>
 {pest_alert}
-
+{memo_block}
 🏛 <b>標案搜尋結果</b>
 {tenders}
 
@@ -127,13 +151,7 @@ def build_message():
 
 🐛 <b>本週病蟲害提醒</b>
 {pest_alert}
-
-📋 <b>本週重點確認</b>
-☐ 閱讀產業雷達報告
-☐ 確認本週短影音主題
-☐ 確認現場工作排程
-☐ 回顧上週業績指標
-
+{memo_block}
 🏛 <b>標案搜尋結果</b>
 {tenders}
 
@@ -147,13 +165,7 @@ def build_message():
 
 🐛 <b>本月病蟲害提醒</b>
 {pest_alert}
-
-📋 <b>今日待辦清單</b>
-☐ 回覆客戶詢問
-☐ 確認現場人員工作狀況
-☐ 確認短影音進度
-☐ 處理報價單或請款單
-
+{memo_block}
 🏛 <b>標案搜尋結果</b>
 {tenders}
 
@@ -164,6 +176,7 @@ def build_message():
 print("程式開始執行")
 print(f"BOT_TOKEN: {'有設定' if BOT_TOKEN else '沒有設定！'}")
 print(f"CHAT_ID: {'有設定' if CHAT_ID else '沒有設定！'}")
+print(f"APPS_SCRIPT_URL: {'有設定' if APPS_SCRIPT_URL else '沒有設定！'}")
 message = build_message()
 print("訊息建立完成，準備發送...")
 send_telegram(message)
