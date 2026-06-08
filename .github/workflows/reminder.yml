@@ -1,7 +1,7 @@
 name: 夏威夷每日提醒
 on:
   schedule:
-    - cron: '0 0 * * *'  # 每天UTC 00:00 = 台灣早上08:00
+     - cron: '0 23 * * *'  # 每天UTC 23:00 = 台灣早上07:00
   workflow_dispatch:  # 允許手動執行測試
 jobs:
   send-reminder:
