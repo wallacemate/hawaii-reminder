@@ -20,7 +20,6 @@ def send_telegram(message):
         print(f"❌ 錯誤：{e}")
 
 def get_memo():
-    """從試算表讀取備忘錄內容"""
     try:
         url = f"{APPS_SCRIPT_URL}?action=getMemo"
         res = requests.get(url, timeout=15)
@@ -71,21 +70,61 @@ def get_pest_alert():
     return alerts.get(month, "注意當季病蟲害")
 
 def search_tenders():
-    keywords = ["病媒防治", "消毒", "環境維護", "登革熱"]
+    """搜尋政府採購網標案"""
+    keywords = ["病媒防治", "清潔勞務", "消毒", "登革熱防治"]
     results = []
-    headers = {"User-Agent": "Mozilla/5.0"}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept": "application/json, text/javascript, */*",
+        "Referer": "https://web.pcc.gov.tw/"
+    }
+
     for keyword in keywords:
         try:
-            url = f"https://web.pcc.gov.tw/prkms/tender/common/basic/readTenderBasic?firstSearch=true&searchType=basic&keyword={keyword}&tenderStatus=TENDER_DECLARATION"
-            res = requests.get(url, headers=headers, timeout=10)
-            if res.status_code == 200 and keyword in res.text:
-                results.append(f"• 發現「{keyword}」相關標案，建議登入採購網確認")
-                break
-        except:
+            # 使用政府採購網正確的搜尋API
+            url = "https://web.pcc.gov.tw/prkms/tender/common/basic/readTenderBasic"
+            params = {
+                "firstSearch": "true",
+                "searchType": "basic",
+                "keyword": keyword,
+                "orgName": "",
+                "orgId": "",
+                "tenderName": "",
+                "tenderId": "",
+                "tenderStatus": "TENDER_DECLARATION",
+                "tenderWay": "TENDER_WAY_ALL_DECLARATION",
+                "tenderDateRadio": "isAfterDate",
+                "tenderStartDate": datetime.now().strftime("%Y/%m/%d"),
+                "isShowSpdt": "N",
+                "pageIndex": "1"
+            }
+            res = requests.get(url, params=params, headers=headers, timeout=15)
+            print(f"標案搜尋「{keyword}」狀態碼：{res.status_code}")
+
+            if res.status_code == 200:
+                try:
+                    data = res.json()
+                    total = data.get("totalCount", 0) or data.get("total", 0)
+                    records = data.get("tenderList", []) or data.get("records", []) or data.get("data", [])
+                    print(f"「{keyword}」找到 {total} 筆，records長度：{len(records)}")
+
+                    if records:
+                        for r in records[:2]:  # 最多顯示2筆
+                            name = r.get("tenderName", "") or r.get("pkAtmMain", {}).get("tenderName", "")
+                            org = r.get("orgName", "") or r.get("pkAtmMain", {}).get("orgName", "")
+                            deadline = r.get("tenderEndDate", "") or r.get("pkAtmMain", {}).get("tenderEndDate", "")
+                            if name:
+                                results.append(f"• 【{keyword}】{org} — {name}（截止：{deadline}）")
+                except Exception as je:
+                    print(f"JSON解析失敗：{je}，回傳內容前200字：{res.text[:200]}")
+        except Exception as e:
+            print(f"搜尋「{keyword}」失敗：{e}")
             continue
-    if not results:
-        return "今日暫無符合條件的新標案\n建議至 taiwanbuying.com.tw 手動確認"
-    return "\n".join(results)
+
+    if results:
+        return "發現以下相關標案：\n" + "\n".join(results) + "\n➡️ 詳情請至 web.pcc.gov.tw 確認"
+    else:
+        return "今日暫無符合條件的新標案"
 
 def get_monthly_report():
     try:
@@ -107,7 +146,6 @@ def get_monthly_report():
         return f"產業報告暫時無法生成：{e}"
 
 def build_memo_block(memo):
-    """把備忘錄內容格式化成待辦清單區塊"""
     if not memo:
         return ""
     lines = [line.strip() for line in memo.splitlines() if line.strip()]
