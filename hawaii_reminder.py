@@ -70,61 +70,15 @@ def get_pest_alert():
     return alerts.get(month, "注意當季病蟲害")
 
 def search_tenders():
-    """搜尋政府採購網標案"""
-    keywords = ["病媒防治", "清潔勞務", "消毒", "登革熱防治"]
-    results = []
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Accept": "application/json, text/javascript, */*",
-        "Referer": "https://web.pcc.gov.tw/"
-    }
-
-    for keyword in keywords:
-        try:
-            # 使用政府採購網正確的搜尋API
-            url = "https://web.pcc.gov.tw/prkms/tender/common/basic/readTenderBasic"
-            params = {
-                "firstSearch": "true",
-                "searchType": "basic",
-                "keyword": keyword,
-                "orgName": "",
-                "orgId": "",
-                "tenderName": "",
-                "tenderId": "",
-                "tenderStatus": "TENDER_DECLARATION",
-                "tenderWay": "TENDER_WAY_ALL_DECLARATION",
-                "tenderDateRadio": "isAfterDate",
-                "tenderStartDate": datetime.now().strftime("%Y/%m/%d"),
-                "isShowSpdt": "N",
-                "pageIndex": "1"
-            }
-            res = requests.get(url, params=params, headers=headers, timeout=15)
-            print(f"標案搜尋「{keyword}」狀態碼：{res.status_code}")
-
-            if res.status_code == 200:
-                try:
-                    data = res.json()
-                    total = data.get("totalCount", 0) or data.get("total", 0)
-                    records = data.get("tenderList", []) or data.get("records", []) or data.get("data", [])
-                    print(f"「{keyword}」找到 {total} 筆，records長度：{len(records)}")
-
-                    if records:
-                        for r in records[:2]:  # 最多顯示2筆
-                            name = r.get("tenderName", "") or r.get("pkAtmMain", {}).get("tenderName", "")
-                            org = r.get("orgName", "") or r.get("pkAtmMain", {}).get("orgName", "")
-                            deadline = r.get("tenderEndDate", "") or r.get("pkAtmMain", {}).get("tenderEndDate", "")
-                            if name:
-                                results.append(f"• 【{keyword}】{org} — {name}（截止：{deadline}）")
-                except Exception as je:
-                    print(f"JSON解析失敗：{je}，回傳內容前200字：{res.text[:200]}")
-        except Exception as e:
-            print(f"搜尋「{keyword}」失敗：{e}")
-            continue
-
-    if results:
-        return "發現以下相關標案：\n" + "\n".join(results) + "\n➡️ 詳情請至 web.pcc.gov.tw 確認"
-    else:
-        return "今日暫無符合條件的新標案"
+    """提供採購網快速查詢連結"""
+    from urllib.parse import quote
+    keywords = ["病媒防治", "清潔勞務", "消毒", "登革熱"]
+    links = []
+    for kw in keywords:
+        encoded = quote(kw)
+        url = f"https://web.pcc.gov.tw/prkms/tender/common/basic/indexTenderBasic?firstSearch=true&searchType=basic&keyword={encoded}&tenderStatus=TENDER_DECLARATION"
+        links.append(f'• <a href="{url}">{kw}</a>')
+    return "點擊快速查詢：\n" + "\n".join(links)
 
 def get_monthly_report():
     try:
@@ -173,7 +127,7 @@ def build_message():
 🐛 <b>本月病蟲害提醒</b>
 {pest_alert}
 {memo_block}
-🏛 <b>標案搜尋結果</b>
+🏛 <b>今日標案快查</b>
 {tenders}
 
 📊 <b>本月產業AI分析報告</b>
@@ -190,7 +144,7 @@ def build_message():
 🐛 <b>本週病蟲害提醒</b>
 {pest_alert}
 {memo_block}
-🏛 <b>標案搜尋結果</b>
+🏛 <b>今日標案快查</b>
 {tenders}
 
 💪 新的一週，加油！"""
@@ -204,7 +158,7 @@ def build_message():
 🐛 <b>本月病蟲害提醒</b>
 {pest_alert}
 {memo_block}
-🏛 <b>標案搜尋結果</b>
+🏛 <b>今日標案快查</b>
 {tenders}
 
 💪 今天也加油！"""
