@@ -9,7 +9,12 @@ APPS_SCRIPT_URL = os.environ.get("APPS_SCRIPT_URL")
 
 def send_telegram(message):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    data = {"chat_id": CHAT_ID, "text": message, "parse_mode": "HTML"}
+    data = {
+        "chat_id": CHAT_ID,
+        "text": message,
+        "parse_mode": "HTML",
+        "disable_web_page_preview": True
+    }
     try:
         response = requests.post(url, data=data)
         if response.status_code == 200:
@@ -70,7 +75,6 @@ def get_pest_alert():
     return alerts.get(month, "注意當季病蟲害")
 
 def search_tenders():
-    """提供採購網快速查詢連結"""
     from urllib.parse import quote
     keywords = ["病媒防治", "清潔勞務", "消毒", "登革熱"]
     links = []
