@@ -36,6 +36,19 @@ def get_memo():
         print(f"備忘錄讀取失敗：{e}")
         return ""
 
+def get_receivables():
+    """讀取未收應收款清單"""
+    try:
+        url = f"{APPS_SCRIPT_URL}?action=getReceivables"
+        res = requests.get(url, timeout=15)
+        data = res.json()
+        if data.get("success"):
+            return data.get("records", [])
+        return []
+    except Exception as e:
+        print(f"應收款讀取失敗：{e}")
+        return []
+
 def get_weather():
     try:
         url = "https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-C0032-001"
@@ -110,19 +123,60 @@ def build_memo_block(memo):
     formatted = "\n".join(f"☐ {line}" for line in lines)
     return f"\n📝 <b>今日待辦（工具箱備忘錄）</b>\n{formatted}\n"
 
+def build_receivables_message(records):
+    """建立應收款提醒訊息"""
+    now = datetime.now()
+    today_str = now.strftime("%Y/%m/%d")
+
+    if not records:
+        return f"""💰 <b>應收款提醒｜{today_str}</b>
+
+✅ 目前沒有未收款項，太棒了！"""
+
+    total = sum(float(r.get("amount", 0) or 0) for r in records)
+    uncollected = [r for r in records if r.get("status") == "未收"]
+    partial = [r for r in records if r.get("status") == "部分收款"]
+
+    lines = []
+    for r in records:
+        status_icon = "🔴" if r.get("status") == "未收" else "🟡"
+        amount = float(r.get("amount", 0) or 0)
+        lines.append(f"{status_icon} {r.get('client','—')}　${int(amount):,}　{r.get('workdate','')}")
+
+    message = f"""💰 <b>應收款提醒｜{today_str}</b>
+
+📊 未收：{len(uncollected)} 筆｜部分收款：{len(partial)} 筆｜合計：<b>${int(total):,} 元</b>
+
+{chr(10).join(lines)}
+
+➡️ 請至應收款管理系統更新收款狀態"""
+
+    return message
+
 def build_message():
     now = datetime.now()
     today_str = now.strftime("%Y/%m/%d")
     is_monday = now.weekday() == 0
     is_first_day = now.day == 1
+    is_reminder_day = now.day in [5, 15, 25]
     weather = get_weather()
     pest_alert = get_pest_alert()
     tenders = search_tenders()
     memo = get_memo()
     memo_block = build_memo_block(memo)
 
+    # 應收款提醒日（5/15/25號）單獨發送
+    if is_reminder_day and not is_first_day:
+        records = get_receivables()
+        rec_message = build_receivables_message(records)
+        send_telegram(rec_message)
+        print(f"✅ 應收款提醒已發送，共 {len(records)} 筆未收")
+
     if is_first_day:
         report = get_monthly_report()
+        records = get_receivables()
+        rec_message = build_receivables_message(records)
+        send_telegram(rec_message)
         message = f"""🗓 <b>每月第一天｜{today_str}</b>
 
 🌤 <b>屏東今日天氣</b>
