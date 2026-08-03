@@ -89,7 +89,7 @@ def get_pest_alert():
 
 def search_tenders():
     from urllib.parse import quote
-    keywords = ["病媒防治", "清潔勞務", "消毒", "登革熱"]
+    keywords = ["病媒防治", "清潔", "環境消毒", "除蟲", "登革熱", "孳生源", "化學防治", "白蟻"]
     links = []
     for kw in keywords:
         encoded = quote(kw)
